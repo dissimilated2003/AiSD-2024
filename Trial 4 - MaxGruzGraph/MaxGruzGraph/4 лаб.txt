@@ -1,0 +1,159 @@
+//                 ВОЛИК АНДРЕЙ ОЛЕГОВИЧ ПС-23
+//
+// 18. Имеется  сеть  автомобильных  дорог. Для  каждой  дороги
+// известна максимальная масса груза, которую можно провезти по
+// этой   дороге. С   помощью  алгоритма  Дейкстры   определить
+// максимальный   груз, который  можно  провезти  между   двумя
+// указанными городами. Проиллюстрировать  в  таблице по  шагам 
+// этапы поиска(9).
+
+#include <iostream>
+#include <fstream>
+#include <queue>
+#include <sstream>
+
+using std::string;
+
+const int PLUS_INF = 100000000;
+const int MINUS_INF = -100000000;
+
+struct City {
+	int CityNum;
+	string CityName;
+	std::vector<int> CityPathWeight;
+};
+
+struct Path {
+	int city;
+	int maxWeight;
+	bool operator<(const Path& other) const {
+		return maxWeight < other.maxWeight;
+	}
+};
+
+std::vector<City> initPaths(std::vector<City> cityMatrix) {
+
+	for (int i = 0; i < cityMatrix.size(); i++) {
+		for (int j = 0; j < cityMatrix.size(); j++) {
+			cityMatrix[i].CityPathWeight.push_back(0);
+		}
+	}
+	return cityMatrix;
+}
+
+std::vector<City> readPathWeight(std::ifstream& pathWeights, 
+								 std::vector<City> cityMatrix) {
+	while (!pathWeights.eof()) {
+		char temp;
+		int baseCity;
+		int destinationCity;
+		int pathWeight;
+		pathWeights >> baseCity;
+		pathWeights >> temp;
+		pathWeights >> destinationCity;
+		pathWeights >> temp;
+		pathWeights >> pathWeight;
+
+		cityMatrix[baseCity - 1].CityPathWeight[destinationCity - 1] = pathWeight;
+	}
+	return cityMatrix;
+}
+
+std::vector<City> readCityList(std::ifstream& citylist) {
+	std::vector<City>  cityMatrix;
+	while (!citylist.eof()) {
+		City temp;
+		citylist >> temp.CityNum;
+		citylist >> temp.CityName;
+		cityMatrix.push_back(temp);
+	}
+	return cityMatrix;
+}
+
+const int n = 50;
+
+void navigator(std::vector<City> cityMatrix, 
+			   int baseCity,
+			   int destinationCity) {
+	int path[n];
+	int distance[n];
+	bool visited[n];
+	int foundVertex, currVertex, minPathWeight, maxWeight;
+	string buff, finalOutStr, midStr;
+
+	minPathWeight = 0;
+	baseCity = baseCity - 1;
+	destinationCity = destinationCity - 1;
+	for (int i = 0; i < cityMatrix.size(); i++) {
+		distance[i] = MINUS_INF;
+		path[i] = 0;
+		visited[i] = false;
+	}
+
+	distance[baseCity] = 0;
+	path[baseCity] = 0;
+	for (int i = 0; i < cityMatrix.size(); i++) {
+		maxWeight = MINUS_INF;
+		for (int j = 0; j < cityMatrix.size(); j++) {
+			if (!visited[j] && distance[j] >= maxWeight) {
+				maxWeight = distance[j];
+				currVertex = j;
+			}
+		}
+		visited[currVertex] = true;
+		for (int j = 0; j < cityMatrix.size(); j++) {
+			if ((!visited[j] &&
+				cityMatrix[currVertex].CityPathWeight[j] != 0) &&
+				distance[currVertex] != MINUS_INF &&
+				cityMatrix[currVertex].CityPathWeight[j] > distance[j]) 
+			{
+				distance[j] = cityMatrix[currVertex].CityPathWeight[j];
+				path[j] = currVertex;
+			}
+		}
+	}
+
+	foundVertex = path[destinationCity];
+	finalOutStr = "Путь до города назначения: ";
+	while (foundVertex != 0) {
+		buff = std::to_string(foundVertex);
+		midStr = cityMatrix[foundVertex].CityName + " (" + buff + ") " + "-> " + midStr;
+		foundVertex = path[foundVertex];
+	}
+	finalOutStr = finalOutStr + midStr + cityMatrix[destinationCity].CityName + " ("; 
+	finalOutStr += std::to_string(destinationCity) + ") ";
+	std::cout << finalOutStr << "\n";
+
+	minPathWeight = PLUS_INF;
+	for (int i = 0; i < cityMatrix.size(); i++) {
+		if (distance[i] > 0) {
+			if (distance[i] <= minPathWeight) {
+				minPathWeight = distance[i];
+			}
+		}
+	}
+	if (minPathWeight == PLUS_INF) {
+		std::cout << "Максимальный груз из " << cityMatrix[baseCity].CityName;
+		std::cout << " в " << cityMatrix[destinationCity].CityName << "невычислим" << "\n";
+	} else {
+		std::cout << "Максимальный груз из " << cityMatrix[baseCity].CityName;
+		std::cout << " в " << cityMatrix[destinationCity].CityName << ": " << minPathWeight << "\n";
+	}
+}
+
+int main() {
+	setlocale(LC_ALL, "Rus");
+	std::ifstream cityList{"cities.txt"};
+	std::ifstream cityRelations{"paths.txt"};
+	std::vector<City> CityMatrix = readCityList(cityList);
+	CityMatrix = initPaths(CityMatrix);
+	CityMatrix = readPathWeight(cityRelations, CityMatrix);
+	int baseCity{};
+	int destinationCity{};
+	std::cout << "Номер пункта отправления: ";
+	std::cin >> baseCity;
+	std::cout << "Номер пункта назначения: ";
+	std::cin >> destinationCity;
+
+	navigator(CityMatrix, baseCity, destinationCity);
+}
