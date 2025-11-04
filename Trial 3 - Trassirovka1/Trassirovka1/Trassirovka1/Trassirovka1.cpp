@@ -24,36 +24,44 @@
 
 using std::string;
 
-struct Tree {
+struct Tree 
+{
     string FunctionName;
     std::unordered_map<string, Tree*> Children;
 };
 
-void printTree(Tree* node, uint32_t Level) {
-    if (node != nullptr) {
-        for (int i = 0; i < Level; i++) {
+void printTree(Tree* node, uint32_t Level) 
+{
+    if (node != nullptr) 
+    {
+        for (int i = 0; i < Level; i++) 
+        {
             std::cout << ".";
         }
+        
         std::cout << node->FunctionName << "\n";
-        for (auto& entry : node->Children) {
+        for (auto& entry : node->Children) 
+        {
             printTree(entry.second, Level + 1);
         }
     }
 };
 
-class MemoryAnalyzer {
+class MemoryAnalyzer 
+{
 public:
     const std::unordered_map<string, uint32_t>& functionToMemory;
     uint32_t maxMemory = 0;
     std::vector<string> bufferPath{};
     std::vector<string> maxPath{};
 
-    MemoryAnalyzer(const std::unordered_map<string, uint32_t>& functionToMemory_)
-        : functionToMemory{ functionToMemory_ } {}
+    MemoryAnalyzer(const std::unordered_map<string, uint32_t>& functionToMemory_) : functionToMemory{ functionToMemory_ } {}
 
-    void calculate(Tree* node, uint32_t pathMemory) {
+    void calculate(Tree* node, uint32_t pathMemory) 
+    {
         auto entry = functionToMemory.find(node->FunctionName);
-        if (entry == functionToMemory.cend()) {
+        if (entry == functionToMemory.cend()) 
+        {
             std::cout << "Ошибка трассировки\n";
             std::abort();
         }
@@ -61,30 +69,35 @@ public:
         
         pathMemory += functionMemory;
         bufferPath.push_back(node->FunctionName);
-        if (pathMemory > maxMemory) {
+        if (pathMemory > maxMemory) 
+        {
             maxMemory = pathMemory;
             maxPath = bufferPath;
         }
 
-        for (auto& entry : node->Children) {
+        for (auto& entry : node->Children) 
+        {
             calculate(entry.second, pathMemory);
         }
         bufferPath.pop_back();
     }
 };
 
-std::unordered_map<string, uint32_t> readWeight(std::ifstream& weights) {
+std::unordered_map<string, uint32_t> readWeight(std::ifstream& weights) 
+{
     string functionName{};
     uint32_t weight{};
     std::unordered_map<string, uint32_t> memory{};
-    while (!weights.eof()) {
+    while (!weights.eof()) 
+    {
         weights >> functionName >> weight;
         memory[functionName] = weight;
     }
     return memory;
 }
 
-Tree* createTree(std::ifstream& trace) {
+Tree* createTree(std::ifstream& trace) 
+{
     Tree* root = new Tree{};
     trace >> root->FunctionName;
 
@@ -94,13 +107,16 @@ Tree* createTree(std::ifstream& trace) {
     knownFunctions.insert(root->FunctionName);
 
     string functionName{};
-    while (!trace.eof()) {
+    while (!trace.eof()) 
+    {
         trace >> functionName;
-        if (trace.fail() && trace.eof()) {
+        if (trace.fail() && trace.eof()) 
+        {
             break;
         }
 
-        if (knownFunctions.find(functionName) == knownFunctions.cend()) {
+        if (knownFunctions.find(functionName) == knownFunctions.cend()) 
+        {
             Tree* node = new Tree{};
             node->FunctionName = functionName;
 
@@ -114,23 +130,27 @@ Tree* createTree(std::ifstream& trace) {
 
         Tree* current = callStack.back();
         auto entry = current->Children.find(functionName);
-        if (entry != current->Children.cend()) {
+        if (entry != current->Children.cend()) 
+        {
             callStack.push_back(entry->second);
             continue;
         }
 
         callStack.pop_back();
-        if (callStack.empty()) {
+        if (callStack.empty()) 
+        {
             break;
         }
 
-        if (functionName != callStack.back()->FunctionName) {
+        if (functionName != callStack.back()->FunctionName) 
+        {
             std::cout << "Ошибка трассировки\n";
             return nullptr;
         }
     }
 
-    if (callStack.size() != 1) {
+    if (callStack.size() != 1) 
+    {
         std::cout << "Ошибка трассировки\n";
         return nullptr;
     }
@@ -138,7 +158,8 @@ Tree* createTree(std::ifstream& trace) {
     return root;
 }
 
-int main() {
+int main() 
+{
     setlocale(LC_ALL, "Rus");
     string input1, input2;
     std::cout << "Введите файл трассировки вызовов:" << "\n";
@@ -155,9 +176,11 @@ int main() {
     MemoryAnalyzer analyzer{memory};
     analyzer.calculate(root, 0);
     std::cout << analyzer.maxMemory << "\n";
-    for (auto& node : analyzer.maxPath) {
+    for (auto& node : analyzer.maxPath) 
+    {
         std::cout << node << "-" ;
     }
     std::cout << "\n";
     return 0;
 }
+
